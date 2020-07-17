@@ -1,59 +1,14 @@
 from utils import *
 from itertools import count
 from collections import deque
-import torch
-import torch.nn as nn
 import torch.optim as optim
 
-class DQNNet(nn.Module):
-    def __init__(self, space_n, n_action, use_dueling=False, device="cpu"):
-        super(DQNNet, self).__init__()
-        self.use_dueling = use_dueling
+from NNModels import *
 
-        self.fc1 = nn.Linear(space_n, 128)
-        self.fc2 = nn.Linear(128, 256)
-
-        if self.use_dueling:
-            self.v = nn.Linear(256, 1)
-
-        self.action = nn.Linear(256, n_action)
-
-    def forward(self, x):
-        x = torch.relu(self.fc1(x))
-        x = torch.relu(self.fc2(x))
-        if self.use_dueling:
-            q = self.action(x)
-            v = self.v(x)
-            action = v + (q - torch.mean(q))
-        else:
-            action = self.action(x)
-
-        return action
-
-class Agent(object):
-    def __init__(self):
-        pass
-
-    def learn(self):
-        pass
-
-    def select_action(self, state):
-        pass
-
-    def tarin(self):
-        pass
-
-    def step(self, state):
-        pass
-
-    def save_model(self, path):
-        pass
-
-    def load_model(self, path):
-        pass
+from Agents import *
 
 class DQNAgent(Agent):
-    def __init__(self, env, device, capacity=1000, batch_size=128, net_sync=5, gamma=0.99, use_dueling=False, render=False):
+    def __init__(self, env, Net, device, ReplayMemory=DQNReplayMemory, capacity=1000, batch_size=128, net_sync=5, gamma=0.99, use_dueling=False, render=False):
         super(DQNAgent, self).__init__()
         self.env = env
         self.render = render
@@ -66,9 +21,9 @@ class DQNAgent(Agent):
         self.net_sync = net_sync
         self.batch_size = batch_size
 
-        self.memory = DQNReplayMemory(capacity)
-        self.policy_net = DQNNet(self.space_n, self.n_actions, use_dueling=use_dueling).to(device)
-        self.target_net = DQNNet(self.space_n, self.n_actions, use_dueling=use_dueling).to(device)
+        self.memory = ReplayMemory(capacity)
+        self.policy_net = Net(self.space_n, self.n_actions, use_dueling=use_dueling).to(device)
+        self.target_net = Net(self.space_n, self.n_actions, use_dueling=use_dueling).to(device)
         self.target_net.load_state_dict(self.policy_net.state_dict())
         self.optimizer = optim.Adam(self.policy_net.parameters())
         self.action_selector = EGreedActionSelector()
@@ -87,7 +42,7 @@ class DQNAgent(Agent):
                         self.env.render()
                     state = torch.tensor(state, dtype=torch.float32).to(self.device)
                     action = self.select_action(state).to(self.device)
-                    next_state, reward, done, _ = self.env.step(action.item())
+                    next_state, reward, done, _ = self.env.step(action.squeeze(0).item())
                     reward = torch.tensor([reward], device=self.device)
                     if done:
                         next_state = None
@@ -120,9 +75,9 @@ class DQNAgent(Agent):
 
         non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
                                                 batch.next_state)), device=self.device, dtype=torch.bool)
-        non_final_next_states = torch.cat([torch.tensor(s, dtype=torch.float32).to(self.device)
-                                           for s in batch.next_state if s is not None]).reshape(-1, self.space_n)
-        state_batch = torch.cat(batch.state).reshape(-1, self.space_n)
+        non_final_next_states = torch.stack([torch.tensor(s, dtype=torch.float32).to(self.device)
+                                           for s in batch.next_state if s is not None])
+        state_batch = torch.stack(batch.state)
         action_batch = torch.cat(batch.action)
         reward_batch = torch.cat(batch.reward)
         state_action_values = self.policy_net(state_batch).gather(1, action_batch)
@@ -142,7 +97,6 @@ class DQNAgent(Agent):
 
     def load_model(self, path="./saved_model.pkl"):
         self.policy_net.load_state_dict(torch.load(path))
-
 
 class DDQNAgent(DQNAgent):
     def learn(self):

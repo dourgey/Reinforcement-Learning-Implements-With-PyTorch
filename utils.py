@@ -35,7 +35,8 @@ class EGreedActionSelector(ActionSelector):
         sample = random.random()
         if sample > self.epsilon:
             with torch.no_grad():
-                return policy_net(state).max(0)[1].unsqueeze(0).unsqueeze(0)
+                a = policy_net(state)
+                return a.max(1)[1].unsqueeze(0)
         else:
             return torch.tensor([[random.randrange(n_actions)]], dtype=torch.long)
 
