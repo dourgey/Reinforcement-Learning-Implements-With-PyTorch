@@ -1,4 +1,5 @@
-from tqdm import tqdm
+import numpy as np
+from tqdm import tqdm, trange
 from random import random, randint
 from environment import KArmsBandit
 import matplotlib.pyplot as plt
@@ -58,57 +59,69 @@ class UCBPolicy:
         self.Q[action] = self.Q[action] + 1 / self.N[action] * (reward - self.Q[action])
 
 K = 10
-bandit = KArmsBandit(K)
-policy0 = EGreedyPolicy(K, 0)
-policy1 = EGreedyPolicy(K, 0.1)
-policy2 = EGreedyPolicy(K, 0.01)
-UCB_policy = UCBPolicy(K, 2)
 
-mean_reward_list0 = []
-best_action_rate0 = []
-mean_reward_list1 = []
-best_action_rate1 = []
-mean_reward_list2 = []
-best_action_rate2 = []
-mean_reward_list_ucb = []
-best_action_rate_ucb = []
-for i in tqdm(range(100)):
-    action = policy0.get_action(bandit.q_star)
-    reward = bandit.get_reward(action)
-    policy0.update_Q(action, reward)
-    mean_reward_list0.append(policy0.total_reward / policy0.count)
-    best_action_rate0.append(policy0.attack_q_star / policy0.count)
 
-    action = policy1.get_action(bandit.q_star)
-    reward = bandit.get_reward(action)
-    policy1.update_Q(action, reward)
-    mean_reward_list1.append(policy1.total_reward / policy1.count)
-    best_action_rate1.append(policy1.attack_q_star / policy1.count)
-
-    action = policy2.get_action(bandit.q_star)
-    reward = bandit.get_reward(action)
-    policy2.update_Q(action, reward)
-    mean_reward_list2.append(policy2.total_reward / policy2.count)
-    best_action_rate2.append(policy2.attack_q_star / policy2.count)
-
-    action = UCB_policy.get_action(bandit.q_star)
-    reward = bandit.get_reward(action)
-    UCB_policy.update_Q(action, reward)
-    mean_reward_list_ucb.append(UCB_policy.total_reward / UCB_policy.count)
-    best_action_rate_ucb.append(UCB_policy.attack_q_star / UCB_policy.count)
-
-plt.title('mean reward')
-plt.plot(mean_reward_list0, label='e=0')
-plt.plot(mean_reward_list1, label='e=0.1')
-plt.plot(mean_reward_list2, label='e=0.01')
-plt.plot(mean_reward_list_ucb, label='ucb c=2')
-plt.legend()
+rewards = []
+for i in trange(2000):
+    bandit = KArmsBandit(K)
+    policy_e_greedy_0 = EGreedyPolicy(K, 0.1)
+    rewards.append([])
+    for j in range(1000):
+        action = policy_e_greedy_0.get_action(bandit.q_star)
+        rewards[-1].append(bandit.get_reward(action))
+plt.plot(np.mean(np.array(rewards), axis=0))
 plt.show()
 
-plt.title('best action rate')
-plt.plot(best_action_rate0, label='e=0')
-plt.plot(best_action_rate1, label='e=0.1')
-plt.plot(best_action_rate2, label='e=0.01')
-plt.plot(best_action_rate_ucb, label='ucb c=2')
-plt.legend()
-plt.show()
+# policy0 = EGreedyPolicy(K, 0)
+# policy1 = EGreedyPolicy(K, 0.1)
+# policy2 = EGreedyPolicy(K, 0.01)
+# UCB_policy = UCBPolicy(K, 2)
+#
+# mean_reward_list0 = []
+# best_action_rate0 = []
+# mean_reward_list1 = []
+# best_action_rate1 = []
+# mean_reward_list2 = []
+# best_action_rate2 = []
+# mean_reward_list_ucb = []
+# best_action_rate_ucb = []
+# for i in tqdm(range(1000)):
+#     action = policy0.get_action(bandit.q_star)
+#     reward = bandit.get_reward(action)
+#     policy0.update_Q(action, reward)
+#     mean_reward_list0.append(policy0.total_reward / policy0.count)
+#     best_action_rate0.append(policy0.attack_q_star / policy0.count)
+#
+#     action = policy1.get_action(bandit.q_star)
+#     reward = bandit.get_reward(action)
+#     policy1.update_Q(action, reward)
+#     mean_reward_list1.append(policy1.total_reward / policy1.count)
+#     best_action_rate1.append(policy1.attack_q_star / policy1.count)
+#
+#     action = policy2.get_action(bandit.q_star)
+#     reward = bandit.get_reward(action)
+#     policy2.update_Q(action, reward)
+#     mean_reward_list2.append(policy2.total_reward / policy2.count)
+#     best_action_rate2.append(policy2.attack_q_star / policy2.count)
+#
+#     action = UCB_policy.get_action(bandit.q_star)
+#     reward = bandit.get_reward(action)
+#     UCB_policy.update_Q(action, reward)
+#     mean_reward_list_ucb.append(UCB_policy.total_reward / UCB_policy.count)
+#     best_action_rate_ucb.append(UCB_policy.attack_q_star / UCB_policy.count)
+#
+# plt.title('mean reward')
+# plt.plot(mean_reward_list0, label='e=0')
+# plt.plot(mean_reward_list1, label='e=0.1')
+# plt.plot(mean_reward_list2, label='e=0.01')
+# plt.plot(mean_reward_list_ucb, label='ucb c=2')
+# plt.legend()
+# plt.show()
+#
+# plt.title('best action rate')
+# plt.plot(best_action_rate0, label='e=0')
+# plt.plot(best_action_rate1, label='e=0.1')
+# plt.plot(best_action_rate2, label='e=0.01')
+# plt.plot(best_action_rate_ucb, label='ucb c=2')
+# plt.legend()
+# plt.show()
